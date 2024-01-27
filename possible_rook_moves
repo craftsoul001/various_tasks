@@ -13,5 +13,5 @@ if 1 <= x1 <=8 and 1 <= y1 <=8 and 1 <= x2 <=8 and 1 <= y2 <=8:
     else:
         print('NO')
 else:
-    print('ОШИБКА')
+    print('ERROR')
     
