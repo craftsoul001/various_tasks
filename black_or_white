@@ -1,0 +1,23 @@
+#  as input, we get the coordinates of two squares
+#  of the chessboard and output a message telling us
+#  whether these squares are of the same color.
+check_cell1 = str(input())
+check_cell2 = str(input())
+
+
+def check_cl(ch_st):
+    if (
+            ord(ch_st[0]) % 2 != 0 and
+            int(ch_st[1]) % 2 != 0 or
+            ord(ch_st[0]) % 2 == 0 and
+            int(ch_st[1]) % 2 == 0
+    ):
+        return 'Black'
+    else:
+        return 'White'
+
+
+if check_cl(check_cell1) == check_cl(check_cell2):
+    print('YES')
+else:
+    print('NO')
