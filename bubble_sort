@@ -1,0 +1,23 @@
+# at input n and s
+# n - list length
+# s - array elements separated by a space
+n = int(input())
+s = list(map(int, (input().split())))
+col = 0
+j = 0
+check = 1
+while True:
+    if col == check:
+        # the loop will terminate when
+        # col (the permutation counter) stops increasing
+        break
+    check = col
+    for i in range(n - 1):
+        if s[i] == s[i + 1]:
+            continue
+        elif s[i] > s[i + 1]:
+            col += 1
+            s[i + 1], s[i] = s[i], s[i + 1]
+
+print(*s)
+print(col)
