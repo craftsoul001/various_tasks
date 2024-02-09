@@ -4,7 +4,6 @@
 n = int(input())
 s = list(map(int, (input().split())))
 col = 0
-j = 0
 check = 1
 while True:
     if col == check:
