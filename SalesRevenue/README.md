@@ -1,4 +1,4 @@
-[ссылка на страницу]()
+[ссылка на страницу](https://craftsoul001.github.io/various_tasks/SalesRevenue/index.html)
 
 # Скрипты Mermaid для проекта
 Динамика ежемесячных продаж (XY Диаграмма):
