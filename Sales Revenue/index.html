@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Mermaid Chart</title>
+</head>
+<body>
+
+<h1>Динамика ежемесячных продаж</h1>
+<hr>
+<p style="color: blue">КАК ПОЛЬЗОВАТЬСЯ</p>
+<p>Передать значения, для каждого месяца, можно списком из 12 чисел через запятую в поле "Изменить значения".</p>
+<p>Также можно выбрать месяц (поле "Выбранный месяц") и изменить ему значение вручную.</p>
+<hr>
+<h4>Изменить значения</h4>
+
+<label for="valuesList">Значения за 12 месяцев (через запятую):</label><br>
+<textarea id="valuesList" rows="3" cols="70">0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0</textarea><br>
+<button id="applyValues">Применить список</button>
+<p id="listError" style="color: red;"></p>
+
+<h4 id="months">Выбранный месяц</h4>
+<label for="month">Выберите месяц:</label>
+<select id="month" name="month_choice">
+    <option value="jan" selected>jan</option>
+    <option value="feb">feb</option>
+    <option value="mar">mar</option>
+    <option value="apr">apr</option>
+    <option value="may">may</option>
+    <option value="jun">jun</option>
+    <option value="jul">jul</option>
+    <option value="aug">aug</option>
+    <option value="sep">sep</option>
+    <option value="oct">oct</option>
+    <option value="nov">nov</option>
+    <option value="dec">dec</option>
+</select>
+
+<label for="value">Значение:</label>
+<input type="number" id="value" min="0" step="10" value="4000">
+
+<hr>
+<p>Here is a mermaid unit:</p>
+<pre class="mermaid" id="demo"></pre>
+<hr>
+
+<h1>Диаграмма-Дерево по проданным товарам за месяц</h1>
+<p>Here is a mermaid unit:</p>
+<pre class="mermaid" id="demo2"></pre>
+
+<script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: false });
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                    'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+    let values = Array(12).fill(0);
+
+    const select = document.getElementById('month');
+    const valueInput = document.getElementById('value');
+    const valuesListInput = document.getElementById('valuesList');
+    const applyValuesButton = document.getElementById('applyValues');
+    const monthTitle = document.getElementById('months');
+    const chart = document.getElementById('demo');
+    const treemap = document.getElementById('demo2');
+    const listError = document.getElementById('listError');
+
+    function getMermaidScriptChart() {
+        return `xychart-beta\n` +
+            `  title "Sales Revenue"\n` +
+            `  x-axis [${months.join(', ')}]\n` +
+            `  y-axis "Revenue (in $)" 0 --> ${Math.max(11000, ...values)}\n` +
+            `  bar [${values.join(', ')}]`;
+    }
+
+    async function renderChart() {
+        const MermaidScriptString = getMermaidScriptChart();
+        const { svg } = await mermaid.render('chart-' + Date.now(), MermaidScriptString);
+        chart.innerHTML = svg;
+    }
+
+    function getMermaidScriptTreeMap() {
+        return `treemap-beta\n` +
+        `"Monthly Revenue"\n` +
+        `    "Кирпичи": 3000\n` +
+        `    "Цемент": 1000\n` +
+        `    "Лопаты": 500\n`;
+    }
+
+    async function renderTreemap() {
+        const MermaidScriptString1 = getMermaidScriptTreeMap();
+        const { svg } = await mermaid.render('treemap-' + Date.now(), MermaidScriptString1);
+        treemap.innerHTML = svg; // Исправлено: treemap вместо Treemap
+    }
+
+    function updateSelectedMonth() {
+        const index = select.selectedIndex;
+        monthTitle.textContent = `Выбранный месяц: ${months[index]}`;
+        valueInput.value = values[index];
+    }
+
+    function updateValuesListField() {
+        valuesListInput.value = values.join(', ');
+    }
+
+    select.addEventListener('change', updateSelectedMonth);
+
+    valueInput.addEventListener('input', async () => {
+        const index = select.selectedIndex;
+        const newValue = Number(valueInput.value);
+
+        if (Number.isFinite(newValue)) {
+            values[index] = newValue;
+            updateValuesListField();
+            await renderTreemap();
+            await renderChart();
+        }
+    });
+
+    applyValuesButton.addEventListener('click', async () => {
+        const newValues = valuesListInput.value
+            .split(',')
+            .map(value => value.trim())
+            .filter(value => value !== '')
+            .map(Number);
+
+        if (newValues.length !== 12) {
+            listError.textContent = 'Необходимо указать ровно 12 чисел — по одному для каждого месяца.';
+            return;
+        }
+
+        if (newValues.some(value => !Number.isFinite(value))) {
+            listError.textContent = 'Список должен содержать только числа, разделённые запятыми.';
+            return;
+        }
+
+        values = newValues;
+        listError.textContent = '';
+        updateSelectedMonth();
+        updateValuesListField();
+        await renderTreemap(); // Добавлено обновление treemap при изменении списка
+        await renderChart();
+    });
+
+    updateSelectedMonth();
+    await renderTreemap();
+    await renderChart();
+</script>
+
+</body>
+</html>
