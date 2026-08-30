@@ -48,29 +48,55 @@
 <p>Here is a mermaid unit:</p>
 <pre class="mermaid" id="demo2"></pre>
 
+<label for="valuesCatList">Значения по категориям: Кирпич, Цемент, Лопаты</label><br>
+<textarea id="valuesCatList" rows="3" cols="30">0, 0, 0</textarea><br>
+<button id="applyCatValues">Применить список</button>
+<p id="catListError" style="color: red;"></p>
+
 <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
     mermaid.initialize({ startOnLoad: false });
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
                     'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-    let values = Array(12).fill(0);
+    const mainMap = new Map([
+        ["jan", { month: 0, product_cat: [1, 1, 1] }],
+        ["feb", { month: 0, product_cat: [1, 1, 1] }],
+        ["mar", { month: 0, product_cat: [1, 1, 1] }],
+        ["apr", { month: 0, product_cat: [1, 1, 1] }],
+        ["may", { month: 0, product_cat: [1, 1, 1] }],
+        ["jun", { month: 0, product_cat: [1, 1, 1] }],
+        ["jul", { month: 0, product_cat: [1, 1, 1] }],
+        ["aug", { month: 0, product_cat: [1, 1, 1] }],
+        ["sep", { month: 0, product_cat: [1, 1, 1] }],
+        ["oct", { month: 0, product_cat: [1, 1, 1] }],
+        ["nov", { month: 0, product_cat: [1, 1, 1] }],
+        ["dec", { month: 0, product_cat: [1, 1, 1] }],
+    ]);
 
     const select = document.getElementById('month');
+
     const valueInput = document.getElementById('value');
     const valuesListInput = document.getElementById('valuesList');
     const applyValuesButton = document.getElementById('applyValues');
+
+    const valuesListCatInput = document.getElementById('valuesCatList');
+    const applyCatValuesButton = document.getElementById('applyCatValues');
+    const catListError = document.getElementById('catListError');
+
     const monthTitle = document.getElementById('months');
     const chart = document.getElementById('demo');
     const treemap = document.getElementById('demo2');
     const listError = document.getElementById('listError');
 
     function getMermaidScriptChart() {
+        // Собираем значения month из mainMap
+        const monthValues = months.map(m => mainMap.get(m).month);
         return `xychart-beta\n` +
             `  title "Sales Revenue"\n` +
             `  x-axis [${months.join(', ')}]\n` +
-            `  y-axis "Revenue (in $)" 0 --> ${Math.max(11000, ...values)}\n` +
-            `  bar [${values.join(', ')}]`;
+            `  y-axis "Revenue (in $)" 0 --> ${Math.max(11000, ...monthValues)}\n` +
+            `  bar [${monthValues.join(', ')}]`;
     }
 
     async function renderChart() {
@@ -79,38 +105,89 @@
         chart.innerHTML = svg;
     }
 
-    function getMermaidScriptTreeMap() {
+    function getMermaidScriptTreeMap(monthKey) {
+        const data = mainMap.get(monthKey);
         return `treemap-beta\n` +
-        `"Monthly Revenue"\n` +
-        `    "Кирпичи": 3000\n` +
-        `    "Цемент": 1000\n` +
-        `    "Лопаты": 500\n`;
+        `"Revenue by Category for ${monthKey}"\n` +
+        `    "Кирпичи": ${data.product_cat[0]}\n` +
+        `    "Цемент": ${data.product_cat[1]}\n` +
+        `    "Лопаты": ${data.product_cat[2]}\n`;
     }
 
     async function renderTreemap() {
-        const MermaidScriptString1 = getMermaidScriptTreeMap();
+        const selectedMonth = months[select.selectedIndex];
+        const MermaidScriptString1 = getMermaidScriptTreeMap(selectedMonth);
         const { svg } = await mermaid.render('treemap-' + Date.now(), MermaidScriptString1);
-        treemap.innerHTML = svg; // Исправлено: treemap вместо Treemap
+        treemap.innerHTML = svg;
     }
 
     function updateSelectedMonth() {
-        const index = select.selectedIndex;
-        monthTitle.textContent = `Выбранный месяц: ${months[index]}`;
-        valueInput.value = values[index];
+        const monthKey = months[select.selectedIndex];
+        const data = mainMap.get(monthKey);
+        monthTitle.textContent = `Выбранный месяц: ${monthKey}`;
+        valueInput.value = data.month;
+        valuesListCatInput.value = data.product_cat.join(', ');
     }
 
     function updateValuesListField() {
-        valuesListInput.value = values.join(', ');
+        const monthValues = months.map(m => mainMap.get(m).month);
+        valuesListInput.value = monthValues.join(', ');
     }
 
-    select.addEventListener('change', updateSelectedMonth);
+    select.addEventListener('change', () => {
+        updateSelectedMonth();
+        renderTreemap();
+    });
+
+    applyCatValuesButton.addEventListener('click', async () => {
+        const monthKey = months[select.selectedIndex];
+        const data = mainMap.get(monthKey);
+
+        const newCategories = valuesListCatInput.value
+            .split(',')
+            .map(value => value.trim())
+            .filter(value => value !== '')
+            .map(Number);
+
+        if (newCategories.length !== 3) {
+            catListError.textContent =
+                'Необходимо указать ровно 3 числа: Кирпичи, Цемент, Лопаты.';
+            return;
+        }
+
+        if (newCategories.some(value => !Number.isFinite(value) || value < 0)) {
+            catListError.textContent =
+                'Значения категорий должны быть неотрицательными числами.';
+            return;
+        }
+
+        const categoriesSum = newCategories.reduce((sum, value) => sum + value, 0);
+
+        if (data.month === 0) {
+            data.month = categoriesSum;
+            valueInput.value = data.month;
+            updateValuesListField();
+        } else if (categoriesSum !== data.month) {
+            catListError.textContent =
+                `Сумма значений категорий (${categoriesSum}) должна быть равна значению выбранного месяца (${data.month}).`;
+            return;
+        }
+
+        data.product_cat = newCategories;
+        valuesListCatInput.value = newCategories.join(', ');
+        catListError.textContent = '';
+
+        await renderTreemap();
+        await renderChart();
+    });
 
     valueInput.addEventListener('input', async () => {
-        const index = select.selectedIndex;
+        const monthKey = months[select.selectedIndex];
         const newValue = Number(valueInput.value);
 
         if (Number.isFinite(newValue)) {
-            values[index] = newValue;
+            const data = mainMap.get(monthKey);
+            data.month = newValue;
             updateValuesListField();
             await renderTreemap();
             await renderChart();
@@ -134,15 +211,20 @@
             return;
         }
 
-        values = newValues;
+        // Обновляем данные в mainMap
+        months.forEach((m, index) => {
+            mainMap.get(m).month = newValues[index];
+        });
+
         listError.textContent = '';
         updateSelectedMonth();
         updateValuesListField();
-        await renderTreemap(); // Добавлено обновление treemap при изменении списка
+        await renderTreemap();
         await renderChart();
     });
 
     updateSelectedMonth();
+    updateValuesListField();
     await renderTreemap();
     await renderChart();
 </script>
